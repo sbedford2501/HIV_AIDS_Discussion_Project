@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HIV/AIDS Gender &amp; Regional Disparities Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;
+  --border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#a0aec0;
+  --female:#E69F00;--male:#0072B2;--esa:#56B4E9;--wca:#009E73;
+  --ratio:#D55E00;--radius:8px;--shadow:0 2px 12px rgba(0,0,0,0.4)
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+#sticky-header{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);padding:.75rem 1.5rem}
+.header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem}
+.header-top h1{font-size:1.1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem}
+.dot{width:10px;height:10px;background:#e53e3e;border-radius:50%;display:inline-block}
+#data-info{font-size:.78rem;color:var(--muted)}
+.filter-bar{display:flex;align-items:center;flex-wrap:wrap;gap:1rem}
+.filter-group{display:flex;align-items:center;gap:.4rem}
+.filter-group label{color:var(--muted);font-size:.82rem;white-space:nowrap}
+select,input[type=number]{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:.3rem .6rem;font-size:.82rem;outline:none}
+select:focus,input[type=number]:focus{border-color:var(--male)}
+input[type=number]{width:72px}
+.btn{padding:.3rem .8rem;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;font-size:.82rem}
+.btn-secondary{background:var(--surface2);color:var(--muted)}
+.btn-secondary:hover{background:var(--surface);color:var(--text)}
+.btn-primary{background:var(--male);color:#fff;border-color:var(--male)}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+#error-banner{display:none;background:#742a2a;color:#fed7d7;padding:1rem 1.5rem;border-left:4px solid #e53e3e;margin:1rem;border-radius:var(--radius)}
+#dashboard-content{padding:1.5rem;max-width:1400px;margin:0 auto}
+.section{margin-bottom:2.5rem}
+.section-title{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--shadow)}
+.kpi-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem}
+.kpi-value{font-size:1.6rem;font-weight:700;line-height:1.1}
+.kpi-card.female .kpi-value{color:var(--female)}
+.kpi-card.male .kpi-value{color:var(--male)}
+.kpi-card.ratio .kpi-value{color:var(--ratio)}
+.chart-grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem}
+.chart-grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:1rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
+.chart-card h3{font-size:.82rem;color:var(--muted);margin-bottom:.75rem;font-weight:500}
+.chart-wrap{position:relative;height:260px}
+.chart-wrap-tall{position:relative;height:380px}
+.spotlight-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.spotlight-table th{text-align:left;color:var(--muted);font-weight:500;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.spotlight-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border);color:var(--text)}
+.spotlight-table tr:last-child td{border-bottom:none}
+.spotlight-table tr:hover td{background:var(--surface2)}
+.regional-layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.regional-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
+.regional-card h3{font-size:.82rem;font-weight:600;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+.regional-card.esa h3{color:var(--esa)}
+.regional-card.wca h3{color:var(--wca)}
+.regional-stat{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.85rem}
+.stat-label{color:var(--muted)}
+.stat-value{font-weight:600;color:var(--text)}
+.pct-badge{display:inline-block;margin-top:.5rem;padding:.2rem .6rem;border-radius:999px;font-size:.78rem;font-weight:700}
+.esa .pct-badge{color:var(--esa);background:rgba(86,180,233,.15)}
+.wca .pct-badge{color:var(--wca);background:rgba(0,158,115,.15)}
+footer{text-align:center;padding:1.5rem;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border);margin-top:1rem}
+@media(max-width:640px){
+  .header-top,.filter-bar{flex-direction:column;align-items:flex-start}
+  .chart-grid-3,.chart-grid-2,.regional-layout{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<header id="sticky-header">
+  <div class="header-top">
+    <h1><span class="dot"></span>HIV/AIDS Gender &amp; Regional Disparities Dashboard</h1>
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <span id="data-info">Data: UNICEF · Ages 10–19 · 1990–2019</span>
+      <button id="btn-export-pdf" class="btn btn-primary">📄 Export PDF</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="filter-region">Region:</label>
+      <select id="filter-region">
+        <option value="All Regions">All Regions</option>
+        <option value="Eastern and Southern Africa">Eastern and Southern Africa</option>
+        <option value="West and Central Africa">West and Central Africa</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Year:</label>
+      <input type="number" id="filter-year-start" value="1990" min="1990" max="2019"/>
+      <span style="color:var(--muted)">to</span>
+      <input type="number" id="filter-year-end" value="2019" min="1990" max="2019"/>
+    </div>
+    <button id="filter-reset" class="btn btn-secondary">Reset</button>
+  </div>
+</header>
+
+<div id="error-banner"><strong>Error:</strong> <span id="error-message"></span></div>
+
+<main id="dashboard-content">
+  <section class="section">
+    <h2 class="section-title">Overview &amp; KPIs</h2>
+    <div class="kpi-grid">
+      <div class="kpi-card female"><div class="kpi-label">Female New Infections</div><div class="kpi-value" id="kpi-fi">—</div></div>
+      <div class="kpi-card male"><div class="kpi-label">Male New Infections</div><div class="kpi-value" id="kpi-mi">—</div></div>
+      <div class="kpi-card female"><div class="kpi-label">Female AIDS Deaths</div><div class="kpi-value" id="kpi-fd">—</div></div>
+      <div class="kpi-card male"><div class="kpi-label">Male AIDS Deaths</div><div class="kpi-value" id="kpi-md">—</div></div>
+      <div class="kpi-card female"><div class="kpi-label">Female Avg Incidence</div><div class="kpi-value" id="kpi-fir">—</div><div style="font-size:.7rem;color:var(--muted)">per 1,000</div></div>
+      <div class="kpi-card male"><div class="kpi-label">Male Avg Incidence</div><div class="kpi-value" id="kpi-mir">—</div><div style="font-size:.7rem;color:var(--muted)">per 1,000</div></div>
+      <div class="kpi-card female"><div class="kpi-label">Female PLHIV</div><div class="kpi-value" id="kpi-fp">—</div></div>
+      <div class="kpi-card male"><div class="kpi-label">Male PLHIV</div><div class="kpi-value" id="kpi-mp">—</div></div>
+      <div class="kpi-card ratio"><div class="kpi-label">Disparity Ratio F÷M</div><div class="kpi-value" id="kpi-dr">—</div><div style="font-size:.7rem;color:var(--muted)">incidence</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Trends Over Time</h2>
+    <div class="chart-grid-3">
+      <div class="chart-card"><h3>New Infections Over Time</h3><div class="chart-wrap"><canvas id="chart-infections-trend"></canvas></div></div>
+      <div class="chart-card"><h3>AIDS Deaths Over Time</h3><div class="chart-wrap"><canvas id="chart-deaths-trend"></canvas></div></div>
+      <div class="chart-card"><h3>Incidence Rate Over Time</h3><div class="chart-wrap"><canvas id="chart-incidence-trend"></canvas></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Gender Comparison by Country</h2>
+    <div class="chart-grid-2">
+      <div class="chart-card"><h3>New Infections by Country &amp; Sex</h3><div class="chart-wrap-tall"><canvas id="chart-infections-bar"></canvas></div></div>
+      <div class="chart-card"><h3>AIDS Deaths by Country &amp; Sex</h3><div class="chart-wrap-tall"><canvas id="chart-deaths-bar"></canvas></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Top Countries by Gender Disparity</h2>
+    <div class="chart-card" style="max-width:600px">
+      <table class="spotlight-table">
+        <thead><tr><th>Country</th><th>Disparity Ratio (F÷M)</th><th>Abs. Diff (Incidence)</th></tr></thead>
+        <tbody id="spotlight-tbody"><tr><td colspan="3" style="text-align:center;color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Regional Summary</h2>
+    <div class="regional-layout">
+      <div class="regional-card esa">
+        <h3>Eastern &amp; Southern Africa</h3>
+        <div class="regional-stat"><span class="stat-label">New Infections</span><span class="stat-value" id="reg-esa-i">—</span></div>
+        <div class="regional-stat"><span class="stat-label">AIDS Deaths</span><span class="stat-value" id="reg-esa-d">—</span></div>
+        <div class="regional-stat"><span class="stat-label">PLHIV</span><span class="stat-value" id="reg-esa-p">—</span></div>
+        <span class="pct-badge" id="reg-esa-pct">—</span> <span style="font-size:.72rem;color:var(--muted)">of total infections</span>
+      </div>
+      <div class="regional-card wca">
+        <h3>West &amp; Central Africa</h3>
+        <div class="regional-stat"><span class="stat-label">New Infections</span><span class="stat-value" id="reg-wca-i">—</span></div>
+        <div class="regional-stat"><span class="stat-label">AIDS Deaths</span><span class="stat-value" id="reg-wca-d">—</span></div>
+        <div class="regional-stat"><span class="stat-label">PLHIV</span><span class="stat-value" id="reg-wca-p">—</span></div>
+        <span class="pct-badge" id="reg-wca-pct">—</span> <span style="font-size:.72rem;color:var(--muted)">of total infections</span>
+      </div>
+    </div>
+    <div class="chart-card"><h3>Regional Comparison</h3><div class="chart-wrap"><canvas id="chart-regional"></canvas></div></div>
+  </section>
+</main>
+
+<footer>Source: UNICEF Global HIV/AIDS Database · Ages 10–19 · 1990–2019</footer>
+
+<script src="js/data.js"></script>
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────
+function fmt(n){if(n==null||isNaN(n))return'0';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(0)}
+function fmtR(r){return(r==null||isNaN(r))?'N/A':r.toFixed(2)}
+const C={female:'#E69F00',male:'#0072B2',esa:'#56B4E9',wca:'#009E73',ratio:'#D55E00'};
+const scaleOpts={grid:{color:'rgba(255,255,255,0.08)'},ticks:{color:'#a0aec0'}};
+const legend={labels:{color:'#e2e8f0',usePointStyle:true,padding:16}};
+const charts={};
+
+function mkLine(id,labels,fData,mData,yLabel,isMean){
+  const cfg={type:'line',data:{labels,datasets:[
+    {label:'Female',data:fData,borderColor:C.female,backgroundColor:C.female+'33',borderWidth:2,tension:.3,spanGaps:false,pointRadius:2},
+    {label:'Male',data:mData,borderColor:C.male,backgroundColor:C.male+'33',borderWidth:2,tension:.3,spanGaps:false,pointRadius:2}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend,tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${isMean?ctx.parsed.y.toFixed(2):fmt(ctx.parsed.y)}`}}},scales:{x:{...scaleOpts,title:{display:true,text:'Year',color:'#a0aec0'}},y:{...scaleOpts,title:{display:true,text:yLabel,color:'#a0aec0'},ticks:{...scaleOpts.ticks,callback:v=>isMean?v.toFixed(1):fmt(v)}}}}};
+  if(charts[id]){charts[id].data=cfg.data;charts[id].options=cfg.options;charts[id].update('active');}
+  else{const cv=document.getElementById(id);if(cv)charts[id]=new Chart(cv,cfg);}
+}
+
+function mkBar(id,countries,fData,mData,xLabel){
+  const cfg={type:'bar',data:{labels:countries,datasets:[
+    {label:'Female',data:fData.map(v=>Math.max(0,v)),backgroundColor:C.female+'cc',borderColor:C.female,borderWidth:1},
+    {label:'Male',data:mData.map(v=>Math.max(0,v)),backgroundColor:C.male+'cc',borderColor:C.male,borderWidth:1}
+  ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend,tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.x)}`}}},scales:{x:{...scaleOpts,ticks:{...scaleOpts.ticks,callback:v=>fmt(v)}},y:{...scaleOpts}}}};
+  if(charts[id]){charts[id].data=cfg.data;charts[id].options=cfg.options;charts[id].update('active');}
+  else{const cv=document.getElementById(id);if(cv)charts[id]=new Chart(cv,cfg);}
+}
+
+function mkRegBar(id,esaVals,wcaVals){
+  const cfg={type:'bar',data:{labels:['New Infections','AIDS Deaths','PLHIV'],datasets:[
+    {label:'Eastern & Southern Africa',data:esaVals,backgroundColor:C.esa+'cc',borderColor:C.esa,borderWidth:1},
+    {label:'West & Central Africa',data:wcaVals,backgroundColor:C.wca+'cc',borderColor:C.wca,borderWidth:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend,tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`}}},scales:{x:{...scaleOpts},y:{...scaleOpts,ticks:{...scaleOpts.ticks,callback:v=>fmt(v)}}}}};
+  if(charts[id]){charts[id].data=cfg.data;charts[id].options=cfg.options;charts[id].update('active');}
+  else{const cv=document.getElementById(id);if(cv)charts[id]=new Chart(cv,cfg);}
+}
+
+// ── Aggregation ───────────────────────────────────────────────────────────
+function aggregate(rows){
+  const tI={},tD={},tIRs={},tIRc={};
+  const bI={},bD={},bIR={};
+  const reg={'Eastern and Southern Africa':{i:0,d:0,p:0},'West and Central Africa':{i:0,d:0,p:0}};
+  let fi=0,mi=0,fd=0,md=0,firs=0,mirs=0,firc=0,mirc=0,fp=0,mp=0;
+
+  for(const r of rows){
+    const yk=`${r.Year}|${r.Sex}`,ck=`${r.Country}|${r.Sex}`,rk=r.UNICEF_Region;
+    tI[yk]=(tI[yk]||0)+r.Annual_New_Infections;
+    tD[yk]=(tD[yk]||0)+r.Annual_AIDS_Deaths;
+    tIRs[yk]=(tIRs[yk]||0)+r.Incidence_Rate;
+    tIRc[yk]=(tIRc[yk]||0)+1;
+    bI[ck]=(bI[ck]||0)+r.Annual_New_Infections;
+    bD[ck]=(bD[ck]||0)+r.Annual_AIDS_Deaths;
+    bIR[ck]=(bIR[ck]||0)+r.Incidence_Rate;
+    if(reg[rk]){reg[rk].i+=r.Annual_New_Infections;reg[rk].d+=r.Annual_AIDS_Deaths;reg[rk].p+=r.PLHIV;}
+    if(r.Sex==='Female'){fi+=r.Annual_New_Infections;fd+=r.Annual_AIDS_Deaths;firs+=r.Incidence_Rate;firc++;fp+=r.PLHIV;}
+    else{mi+=r.Annual_New_Infections;md+=r.Annual_AIDS_Deaths;mirs+=r.Incidence_Rate;mirc++;mp+=r.PLHIV;}
+  }
+
+  // Build trend arrays
+  const years=[...new Set(Object.keys(tI).map(k=>+k.split('|')[0]))].sort((a,b)=>a-b);
+  const trend={years,
+    infF:years.map(y=>tI[`${y}|Female`]??null),infM:years.map(y=>tI[`${y}|Male`]??null),
+    dthF:years.map(y=>tD[`${y}|Female`]??null),dthM:years.map(y=>tD[`${y}|Male`]??null),
+    irF:years.map(y=>tIRs[`${y}|Female`]!=null?tIRs[`${y}|Female`]/(tIRc[`${y}|Female`]||1):null),
+    irM:years.map(y=>tIRs[`${y}|Male`]!=null?tIRs[`${y}|Male`]/(tIRc[`${y}|Male`]||1):null)
+  };
+
+  // Build bar arrays
+  const countries=[...new Set(Object.keys(bI).map(k=>k.split('|')[0]))];
+  countries.sort((a,b)=>(bI[`${b}|Female`]||0)-(bI[`${a}|Female`]||0));
+  const bar={countries,
+    infF:countries.map(c=>bI[`${c}|Female`]||0),infM:countries.map(c=>bI[`${c}|Male`]||0),
+    dthF:countries.map(c=>bD[`${c}|Female`]||0),dthM:countries.map(c=>bD[`${c}|Male`]||0)
+  };
+
+  // Country ratios
+  const allC=[...new Set(Object.keys(bIR).map(k=>k.split('|')[0]))];
+  const ratios=allC.map(c=>{
+    const f=bIR[`${c}|Female`]||0,m=bIR[`${c}|Male`]||0;
+    return m>0?{country:c,ratio:f/m,absDiff:Math.abs(f-m)}:null;
+  }).filter(Boolean).sort((a,b)=>b.ratio-a.ratio);
+
+  const kpis={fi,mi,fd,md,fir:firc>0?firs/firc:0,mir:mirc>0?mirs/mirc:0,fp,mp,dr:mirs>0?firs/mirs:null};
+  return{trend,bar,reg,ratios,kpis};
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render(agg){
+  const{trend,bar,reg,ratios,kpis}=agg;
+  // KPIs
+  document.getElementById('kpi-fi').textContent=fmt(kpis.fi);
+  document.getElementById('kpi-mi').textContent=fmt(kpis.mi);
+  document.getElementById('kpi-fd').textContent=fmt(kpis.fd);
+  document.getElementById('kpi-md').textContent=fmt(kpis.md);
+  document.getElementById('kpi-fir').textContent=kpis.fir.toFixed(2);
+  document.getElementById('kpi-mir').textContent=kpis.mir.toFixed(2);
+  document.getElementById('kpi-fp').textContent=fmt(kpis.fp);
+  document.getElementById('kpi-mp').textContent=fmt(kpis.mp);
+  document.getElementById('kpi-dr').textContent=fmtR(kpis.dr);
+  // Trend charts
+  mkLine('chart-infections-trend',trend.years,trend.infF,trend.infM,'New Infections',false);
+  mkLine('chart-deaths-trend',trend.years,trend.dthF,trend.dthM,'AIDS Deaths',false);
+  mkLine('chart-incidence-trend',trend.years,trend.irF,trend.irM,'Incidence Rate (per 1,000)',true);
+  // Bar charts
+  mkBar('chart-infections-bar',bar.countries,bar.infF,bar.infM,'New Infections');
+  mkBar('chart-deaths-bar',bar.countries,bar.dthF,bar.dthM,'AIDS Deaths');
+  // Spotlight
+  const tbody=document.getElementById('spotlight-tbody');
+  const top5=ratios.slice(0,5);
+  tbody.innerHTML=top5.length===0?'<tr><td colspan="3" style="text-align:center;color:var(--muted)">No data</td></tr>':
+    top5.map((e,i)=>`<tr><td>${i+1}. ${e.country}</td><td style="color:var(--ratio);font-weight:600">${fmtR(e.ratio)}</td><td>${e.absDiff.toFixed(2)}</td></tr>`).join('');
+  // Regional
+  const esa=reg['Eastern and Southern Africa']||{i:0,d:0,p:0};
+  const wca=reg['West and Central Africa']||{i:0,d:0,p:0};
+  const tot=esa.i+wca.i;
+  document.getElementById('reg-esa-i').textContent=fmt(esa.i);
+  document.getElementById('reg-esa-d').textContent=fmt(esa.d);
+  document.getElementById('reg-esa-p').textContent=fmt(esa.p);
+  document.getElementById('reg-esa-pct').textContent=tot>0?(esa.i/tot*100).toFixed(1)+'%':'—';
+  document.getElementById('reg-wca-i').textContent=fmt(wca.i);
+  document.getElementById('reg-wca-d').textContent=fmt(wca.d);
+  document.getElementById('reg-wca-p').textContent=fmt(wca.p);
+  document.getElementById('reg-wca-pct').textContent=tot>0?(wca.i/tot*100).toFixed(1)+'%':'—';
+  mkRegBar('chart-regional',[esa.i,esa.d,esa.p],[wca.i,wca.d,wca.p]);
+}
+
+// ── Parse CSV ─────────────────────────────────────────────────────────────
+function parseCSV(csvStr){
+  const HMAP={
+    'Country':'Country','UNICEF Region':'UNICEF_Region','Year':'Year','Sex':'Sex','Age':'Age',
+    'Estimated incidence rate of new HIV infection per 1 000 uninfected population':'Incidence_Rate',
+    'Estimated number of annual AIDS related deaths':'Annual_AIDS_Deaths',
+    'Estimated number of annual new HIV infections':'Annual_New_Infections',
+    'Estimated number of people living with HIV':'PLHIV',
+    'Estimated rate of annual AIDS related deaths  per 100 000 population':'Death_Rate'
+  };
+  const NUM=['Year','Incidence_Rate','Annual_AIDS_Deaths','Annual_New_Infections','PLHIV','Death_Rate'];
+  const result=Papa.parse(csvStr.trim(),{header:true,skipEmptyLines:true});
+  if(!result.data||result.data.length===0)throw new Error('Dataset is empty.');
+  const rows=[];let skipped=0;
+  for(const raw of result.data){
+    const row={};
+    for(const[h,f]of Object.entries(HMAP)){
+      const k=Object.keys(raw).find(x=>x.trim()===h);
+      row[f]=k!==undefined?raw[k]:'';
+    }
+    let ok=true;
+    for(const f of NUM){
+      const v=parseFloat(String(row[f]).replace(/,/g,''));
+      if(isNaN(v)){skipped++;ok=false;break;}
+      row[f]=v;
+    }
+    if(ok)rows.push(row);
+  }
+  if(skipped>0)console.warn(`Skipped ${skipped} rows with invalid numeric fields`);
+  return rows;
+}
+
+// ── App bootstrap ─────────────────────────────────────────────────────────
+let ALL_ROWS=[];
+let curRegion='All Regions',curYS=1990,curYE=2019;
+
+function applyFilters(){
+  let rows=ALL_ROWS;
+  if(curRegion!=='All Regions')rows=rows.filter(r=>r.UNICEF_Region===curRegion);
+  rows=rows.filter(r=>r.Year>=curYS&&r.Year<=curYE);
+  render(aggregate(rows));
+}
+
+function showError(msg){
+  document.getElementById('error-message').textContent=msg;
+  document.getElementById('error-banner').style.display='block';
+  document.getElementById('dashboard-content').style.display='none';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  try{
+    if(typeof RAW_CSV==='undefined'||!RAW_CSV.trim())throw new Error('RAW_CSV not found. Check data.js is loaded.');
+    ALL_ROWS=parseCSV(RAW_CSV);
+    if(ALL_ROWS.length===0)throw new Error('No valid rows parsed from dataset.');
+    const years=ALL_ROWS.map(r=>r.Year);
+    document.getElementById('data-info').textContent=`Data: UNICEF · Ages 10–19 · ${Math.min(...years)}–${Math.max(...years)} · ${ALL_ROWS.length.toLocaleString()} records`;
+    applyFilters();
+  }catch(e){showError(e.message);return;}
+
+  document.getElementById('filter-region').addEventListener('change',e=>{curRegion=e.target.value;applyFilters();});
+  document.getElementById('filter-year-start').addEventListener('change',e=>{const v=+e.target.value;if(v>=1990&&v<=curYE){curYS=v;applyFilters();}});
+  document.getElementById('filter-year-end').addEventListener('change',e=>{const v=+e.target.value;if(v<=2019&&v>=curYS){curYE=v;applyFilters();}});
+  document.getElementById('filter-reset').addEventListener('click',()=>{
+    curRegion='All Regions';curYS=1990;curYE=2019;
+    document.getElementById('filter-region').value='All Regions';
+    document.getElementById('filter-year-start').value='1990';
+    document.getElementById('filter-year-end').value='2019';
+    applyFilters();
+  });
+
+  document.getElementById('btn-export-pdf').addEventListener('click',async()=>{
+    const btn=document.getElementById('btn-export-pdf');
+    btn.textContent='Generating PDF...';btn.disabled=true;
+    try{
+      const canvas=await html2canvas(document.getElementById('dashboard-content'),{scale:1.5,backgroundColor:'#0f1117',logging:false,useCORS:true});
+      const{jsPDF}=window.jspdf;
+      const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+      const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight();
+      const ratio=canvas.width/canvas.height;
+      let iw=pw,ih=iw/ratio;
+      if(ih<=ph){pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,iw,ih);}
+      else{
+        const ppx=Math.floor(canvas.width/pw*ph);let yo=0,pn=0;
+        while(yo<canvas.height){
+          const sh=Math.min(ppx,canvas.height-yo);
+          const sc=document.createElement('canvas');sc.width=canvas.width;sc.height=sh;
+          sc.getContext('2d').drawImage(canvas,0,-yo);
+          if(pn>0)pdf.addPage();
+          pdf.addImage(sc.toDataURL('image/png'),'PNG',0,0,pw,sh/canvas.width*pw);
+          yo+=sh;pn++;
+        }
+      }
+      pdf.save('hiv-aids-dashboard.pdf');
+    }catch(e){alert('PDF export failed: '+e.message);}
+    finally{btn.textContent='📄 Export PDF';btn.disabled=false;}
+  });
+});
+</script>
+</body>
+</html>
