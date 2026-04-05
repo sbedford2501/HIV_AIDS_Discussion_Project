@@ -2943,10 +2943,6 @@ function render(agg){
   document.getElementById('kpi-mi').textContent=fmt(kpis.mi);
   document.getElementById('kpi-fd').textContent=fmt(kpis.fd);
   document.getElementById('kpi-md').textContent=fmt(kpis.md);
-  document.getElementById('kpi-fir').textContent=kpis.fir.toFixed(2);
-  document.getElementById('kpi-mir').textContent=kpis.mir.toFixed(2);
-  document.getElementById('kpi-fp').textContent=fmt(kpis.fp);
-  document.getElementById('kpi-mp').textContent=fmt(kpis.mp);
   document.getElementById('kpi-dr').textContent=fmtR(kpis.dr);
   // Trend charts
   mkLine('chart-infections-trend',trend.years,trend.infF,trend.infM,'New Infections',false);
