@@ -114,11 +114,40 @@ footer{text-align:center;padding:1.5rem;color:var(--muted);font-size:.78rem;bord
       <div class="kpi-card male"><div class="kpi-label">Male New Infections</div><div class="kpi-value" id="kpi-mi">—</div></div>
       <div class="kpi-card female"><div class="kpi-label">Female AIDS Deaths</div><div class="kpi-value" id="kpi-fd">—</div></div>
       <div class="kpi-card male"><div class="kpi-label">Male AIDS Deaths</div><div class="kpi-value" id="kpi-md">—</div></div>
-      <div class="kpi-card female"><div class="kpi-label">Female Avg Incidence</div><div class="kpi-value" id="kpi-fir">—</div><div style="font-size:.7rem;color:var(--muted)">per 1,000</div></div>
-      <div class="kpi-card male"><div class="kpi-label">Male Avg Incidence</div><div class="kpi-value" id="kpi-mir">—</div><div style="font-size:.7rem;color:var(--muted)">per 1,000</div></div>
-      <div class="kpi-card female"><div class="kpi-label">Female PLHIV</div><div class="kpi-value" id="kpi-fp">—</div></div>
-      <div class="kpi-card male"><div class="kpi-label">Male PLHIV</div><div class="kpi-value" id="kpi-mp">—</div></div>
-      <div class="kpi-card ratio"><div class="kpi-label">Disparity Ratio F÷M</div><div class="kpi-value" id="kpi-dr">—</div><div style="font-size:.7rem;color:var(--muted)">incidence</div></div>
+    </div>
+
+    <!-- Gender Disparity Insight Box -->
+    <div id="disparity-insight" style="margin-top:1rem;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--ratio);border-radius:var(--radius);padding:1.25rem 1.5rem;display:flex;align-items:flex-start;gap:1.25rem;flex-wrap:wrap">
+      <div style="flex:0 0 auto;text-align:center;min-width:90px">
+        <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem">Gender Disparity Ratio</div>
+        <div id="kpi-dr" style="font-size:2.4rem;font-weight:700;color:var(--ratio);line-height:1">—</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">Female ÷ Male</div>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:600;color:var(--text);margin-bottom:.4rem;font-size:.95rem">What does this mean?</div>
+        <div style="color:var(--muted);font-size:.85rem;line-height:1.6">
+          This number compares how likely adolescent girls are to get HIV compared to adolescent boys in the same region and time period.
+          A ratio of <strong style="color:var(--ratio)">3.0</strong> means girls are <strong style="color:var(--ratio)">3× more likely</strong> to become infected than boys.
+          A ratio above 1 signals a gender gap — the higher the number, the greater the inequality.
+          Use the filters above to see how this gap changes by region or time period.
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Insights -->
+    <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--female);border-radius:var(--radius);padding:1rem">
+        <div style="font-size:.78rem;font-weight:600;color:var(--female);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem">📌 Insight: Who Bears the Burden</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.6">Across all countries and years in this dataset, adolescent girls consistently account for the majority of new HIV infections — often 3 to 5 times more than boys of the same age. This reflects deeper structural inequalities including limited access to education, economic dependence, and higher biological vulnerability.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--esa);border-radius:var(--radius);padding:1rem">
+        <div style="font-size:.78rem;font-weight:600;color:var(--esa);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem">📌 Insight: Progress Over Time</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.6">New HIV infections among adolescents peaked in the mid-to-late 1990s across most countries and have declined significantly since. Eastern and Southern Africa drove much of this improvement, with countries like Zimbabwe and Kenya showing steep drops after 2000 — largely attributed to expanded prevention programs and antiretroviral treatment access.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--wca);border-radius:var(--radius);padding:1rem">
+        <div style="font-size:.78rem;font-weight:600;color:var(--wca);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem">📌 Insight: Regional Divide</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.6">Eastern and Southern Africa carries a disproportionately higher HIV burden than West and Central Africa, both in total infections and in the scale of gender disparity. Countries like Eswatini, Lesotho, and South Africa show some of the highest female-to-male incidence ratios globally, highlighting where targeted gender-focused interventions are most urgently needed.</div>
+      </div>
     </div>
   </section>
 
@@ -134,8 +163,8 @@ footer{text-align:center;padding:1.5rem;color:var(--muted);font-size:.78rem;bord
   <section class="section">
     <h2 class="section-title">Gender Comparison by Country</h2>
     <div class="chart-grid-2">
-      <div class="chart-card"><h3>New Infections by Country &amp; Sex</h3><div class="chart-wrap-tall"><canvas id="chart-infections-bar"></canvas></div></div>
-      <div class="chart-card"><h3>AIDS Deaths by Country &amp; Sex</h3><div class="chart-wrap-tall"><canvas id="chart-deaths-bar"></canvas></div></div>
+      <div class="chart-card"><h3>Top 10 Countries — New Infections by Sex</h3><div class="chart-wrap-tall"><canvas id="chart-infections-bar"></canvas></div></div>
+      <div class="chart-card"><h3>Top 10 Countries — AIDS Deaths by Sex</h3><div class="chart-wrap-tall"><canvas id="chart-deaths-bar"></canvas></div></div>
     </div>
   </section>
 
@@ -2886,9 +2915,10 @@ function aggregate(rows){
     irM:years.map(y=>tIRs[`${y}|Male`]!=null?tIRs[`${y}|Male`]/(tIRc[`${y}|Male`]||1):null)
   };
 
-  // Build bar arrays
-  const countries=[...new Set(Object.keys(bI).map(k=>k.split('|')[0]))];
-  countries.sort((a,b)=>(bI[`${b}|Female`]||0)-(bI[`${a}|Female`]||0));
+  // Build bar arrays — top 10 countries by female new infections
+  const allCountries=[...new Set(Object.keys(bI).map(k=>k.split('|')[0]))];
+  allCountries.sort((a,b)=>(bI[`${b}|Female`]||0)-(bI[`${a}|Female`]||0));
+  const countries=allCountries.slice(0,10);
   const bar={countries,
     infF:countries.map(c=>bI[`${c}|Female`]||0),infM:countries.map(c=>bI[`${c}|Male`]||0),
     dthF:countries.map(c=>bD[`${c}|Female`]||0),dthM:countries.map(c=>bD[`${c}|Male`]||0)
